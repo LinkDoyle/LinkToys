@@ -70,10 +70,18 @@
         ".posting-field-more-attrs li > span:nth-child(2) > input"
       );
       for (let i = 0; i < currentDetailValueList.length; ++i) {
+        let lastValue = currentDetailValueList[i].value;
         currentDetailValueList[i].value = detailValues[i];
         currentDetailValueList[i].setAttribute("value", detailValues[i]);
         let event = new Event("change", { bubbles: true });
+        // hack React15
         event.simulated = true;
+        // hack React16 内部定义了descriptor拦截value，此处重置状态
+        // https://github.com/facebook/react/issues/11488#issuecomment-347775628
+        let tracker = currentDetailValueList[i]._valueTracker;
+        if (tracker) {
+          tracker.setValue(lastValue);
+        }
         currentDetailValueList[i].dispatchEvent(event);
       }
     };
