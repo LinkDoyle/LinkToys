@@ -32,6 +32,63 @@
     return template.content.childNodes;
   }
 
+  function fireReactElementChange(element, lastValue) {
+    let event = new Event("change", { bubbles: true });
+    // hack React15
+    event.simulated = true;
+    // hack React16 内部定义了descriptor拦截value，此处重置状态
+    // https://github.com/facebook/react/issues/11488#issuecomment-347775628
+    let tracker = element._valueTracker;
+    if (tracker) {
+      tracker.setValue(lastValue);
+    }
+    element.dispatchEvent(event);
+  }
+
+  function updateProperty() {
+    let propertyInputElements = document.querySelectorAll(
+      "#struct-icbuCatProp div.sell-catProp-struct > div.content input"
+    );
+    let textarea = document.querySelector("#alihelper-property-textarea");
+
+    let values = textarea.value.trim().split(/\n+/);
+    let length = Math.min(propertyInputElements.length, values.length);
+    for (let i = 0; i < length; i++) {
+      let lastValue = propertyInputElements[i].value;
+      propertyInputElements[i].value = values[i];
+      propertyInputElements[i].setAttribute("value", values[i]);
+      fireReactElementChange(propertyInputElements[i], lastValue);
+    }
+  }
+
+  const DEFAULT_PROPERTIES = `Kitchen Toys Set
+Plastic
+ABS
+China
+Jingyao
+AABBCC`;
+
+  function createPropertyTool() {
+    let propertyArea = document.getElementById("struct-icbuCatProp");
+    let div = htmlToElement(`
+  <div class="next-row oly-row-container">
+    <div class="next-col next-col-4 oly-col-container">
+      <label style="color: green;" class="oly-label-container left"
+        >AH-批量商品属性</label
+      >
+    </div>
+    <div class="next-col next-col-20 oly-col-container">
+      <textarea id="alihelper-property-textarea" rows="5"/>
+    </div>
+  </div>
+`);
+    propertyArea.after(div);
+    let textarea = document.querySelector("#alihelper-property-textarea");
+    textarea.addEventListener("keyup", () => updateProperty());
+    textarea.value = DEFAULT_PROPERTIES;
+    updateProperty();
+  }
+
   const DEFAULT_CUSTOM_PROPERTIES = `QTY/CTN
 Function
 Color
@@ -99,16 +156,7 @@ OEM   ODM`;
       let lastValue = currentDetailValueList[i].value;
       currentDetailValueList[i].value = detailValues[i];
       currentDetailValueList[i].setAttribute("value", detailValues[i]);
-      let event = new Event("change", { bubbles: true });
-      // hack React15
-      event.simulated = true;
-      // hack React16 内部定义了descriptor拦截value，此处重置状态
-      // https://github.com/facebook/react/issues/11488#issuecomment-347775628
-      let tracker = currentDetailValueList[i]._valueTracker;
-      if (tracker) {
-        tracker.setValue(lastValue);
-      }
-      currentDetailValueList[i].dispatchEvent(event);
+      fireReactElementChange(currentDetailValueList[i], lastValue);
     }
   }
 
@@ -139,6 +187,7 @@ OEM   ODM`;
 
   window.onload = function () {
     console.debug(`Alibaba Helper is running... ${new Date()}`);
+    createPropertyTool();
     createCustomPropertyTool();
   };
 })();
